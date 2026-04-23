@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
+#include "custom_vector.h"
 
 namespace ifamds {
 

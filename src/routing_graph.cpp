@@ -1,6 +1,6 @@
 #include "routing_graph.h"
 
-#include <queue>
+#include "custom_queue.h"
 #include <iostream>
 
 namespace ifamds {
@@ -11,8 +11,8 @@ constexpr float RoutingGraphModule::NO_EDGE;
 // Path Cost = Distance + Danger
 void RoutingGraphModule::addEdge(int from, int to, float distance, float danger) {
     const float cost = distance + danger;
-    adjacencyList_[from].push_back({to, cost});
-    adjacencyList_[to].push_back({from, cost});
+    adjacencyList_[from].push_back(CustomPair<int, float>(to, cost));
+    adjacencyList_[to].push_back(CustomPair<int, float>(from, cost));
 
     // Also update adjacency matrix (G2) if initialized
     if (matrixSize_ > 0 && from < matrixSize_ && to < matrixSize_) {
@@ -23,28 +23,28 @@ void RoutingGraphModule::addEdge(int from, int to, float distance, float danger)
 
 // BFS traversal using adjacency list (G1) - O(V + E)
 // Explores zones level by level for fire spread prediction
-std::vector<int> RoutingGraphModule::bfs(int start) const {
-    std::vector<int> order;
-    if (adjacencyList_.find(start) == adjacencyList_.end()) {
+CustomVector<int> RoutingGraphModule::bfs(int start) const {
+    CustomVector<int> order;
+    if (!adjacencyList_.contains(start)) {
         return order;
     }
 
-    std::unordered_map<int, bool> visited;
-    std::queue<int> q;
+    CustomMap<int, bool> visited;
+    CustomQueue<int> q;
     visited[start] = true;
-    q.push(start);
+    q.enqueue(start);
 
     while (!q.empty()) {
-        int current = q.front();
-        q.pop();
+        int current;
+        q.dequeue(current);
         order.push_back(current);
 
         const auto& neighbors = adjacencyList_.at(current);
         for (std::size_t i = 0; i < neighbors.size(); ++i) {
             const int next = neighbors[i].first;
-            if (!visited[next]) {
+            if (!visited.contains(next) || !visited[next]) {
                 visited[next] = true;
-                q.push(next);
+                q.enqueue(next);
             }
         }
     }
@@ -53,13 +53,13 @@ std::vector<int> RoutingGraphModule::bfs(int start) const {
 
 // DFS traversal using adjacency list (G1) - O(V + E)
 // Follows one fire spread path deeply before trying others
-std::vector<int> RoutingGraphModule::dfs(int start) const {
-    std::vector<int> order;
-    if (adjacencyList_.find(start) == adjacencyList_.end()) {
+CustomVector<int> RoutingGraphModule::dfs(int start) const {
+    CustomVector<int> order;
+    if (!adjacencyList_.contains(start)) {
         return order;
     }
 
-    std::unordered_map<int, bool> visited;
+    CustomMap<int, bool> visited;
     dfsRecursive(start, visited, order);
     return order;
 }
@@ -85,9 +85,9 @@ float RoutingGraphModule::computePathCost(int from, int to) const {
 void RoutingGraphModule::updateFireAwareCosts(int zoneId, float fireLevel) {
     auto it = adjacencyList_.find(zoneId);
     if (it == adjacencyList_.end()) return;
-    for (auto& edge : it->second) {
-        float baseCost = edge.second;
-        edge.second = baseCost * (1.0f + fireLevel);
+    for (std::size_t i = 0; i < it->second.size(); ++i) {
+        float baseCost = it->second[i].second;
+        it->second[i].second = baseCost * (1.0f + fireLevel);
     }
     std::cout << "  [Routing] Fire-aware costs updated for Zone " << zoneId
               << " (fire level=" << fireLevel << ")\n";
@@ -108,18 +108,18 @@ float RoutingGraphModule::getMatrixCost(int from, int to) const {
 // Initialize adjacency matrix to given size - O(V^2)
 void RoutingGraphModule::initMatrix(int maxNodes) {
     matrixSize_ = maxNodes;
-    adjacencyMatrix_.assign(maxNodes, std::vector<float>(maxNodes, NO_EDGE));
+    adjacencyMatrix_.resize(maxNodes, CustomVector<float>(maxNodes, NO_EDGE));
 }
 
 // DFS recursive helper - O(V + E)
-void RoutingGraphModule::dfsRecursive(int node, std::unordered_map<int, bool>& visited, std::vector<int>& order) const {
+void RoutingGraphModule::dfsRecursive(int node, CustomMap<int, bool>& visited, CustomVector<int>& order) const {
     visited[node] = true;
     order.push_back(node);
 
     const auto& neighbors = adjacencyList_.at(node);
     for (std::size_t i = 0; i < neighbors.size(); ++i) {
         const int next = neighbors[i].first;
-        if (!visited[next]) {
+        if (!visited.contains(next) || !visited[next]) {
             dfsRecursive(next, visited, order);
         }
     }

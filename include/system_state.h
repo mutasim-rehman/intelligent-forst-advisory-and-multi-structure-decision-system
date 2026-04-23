@@ -2,16 +2,16 @@
 #define IFAMDS_SYSTEM_STATE_H
 
 #include "models.h"
-#include <unordered_map>
-#include <vector>
+#include "custom_map.h"
+#include "custom_vector.h"
 
 namespace ifamds {
 
 struct SystemState {
-    std::vector<SensorReading> baselineReadings;
-    std::vector<SensorReading> liveReadings;
-    std::vector<std::vector<float>> zoneMatrix;
-    std::unordered_map<int, ZoneState> zones;
+    CustomVector<SensorReading> baselineReadings;
+    CustomVector<SensorReading> liveReadings;
+    CustomVector<CustomVector<float>> zoneMatrix;
+    CustomMap<int, ZoneState> zones;
     SystemMetrics metrics;
 };
 

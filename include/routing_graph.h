@@ -1,9 +1,9 @@
 #ifndef IFAMDS_ROUTING_GRAPH_H
 #define IFAMDS_ROUTING_GRAPH_H
 
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include "custom_map.h"
+#include "custom_pair.h"
+#include "custom_vector.h"
 
 namespace ifamds {
 
@@ -20,10 +20,10 @@ public:
     void addEdge(int from, int to, float distance, float danger);
 
     // BFS traversal from a starting zone (G1) - O(V + E)
-    std::vector<int> bfs(int start) const;
+    CustomVector<int> bfs(int start) const;
 
     // DFS traversal from a starting zone (G1) - O(V + E)
-    std::vector<int> dfs(int start) const;
+    CustomVector<int> dfs(int start) const;
 
     // Compute direct path cost from adjacency list - O(degree)
     float computePathCost(int from, int to) const;
@@ -41,13 +41,13 @@ public:
     void initMatrix(int maxNodes);
 
 private:
-    void dfsRecursive(int node, std::unordered_map<int, bool>& visited, std::vector<int>& order) const;
+    void dfsRecursive(int node, CustomMap<int, bool>& visited, CustomVector<int>& order) const;
 
     // G1: Adjacency list representation (sparse)
-    std::unordered_map<int, std::vector<std::pair<int, float>>> adjacencyList_;
+    CustomMap<int, CustomVector<CustomPair<int, float>>> adjacencyList_;
 
     // G2: Adjacency matrix representation (dense)
-    std::vector<std::vector<float>> adjacencyMatrix_;
+    CustomVector<CustomVector<float>> adjacencyMatrix_;
     int matrixSize_ = 0;
     static constexpr float NO_EDGE = -1.0F;
 };
