@@ -2,6 +2,16 @@
 
 namespace ifamds {
 
+// Constructor: build all three decision trees on initialization
+DecisionEngineModule::DecisionEngineModule() {
+    zoneTree_.buildZoneTree();         // T10: Zone-level decision tree
+    regionalTree_.buildRegionalTree(); // T11: Regional escalation tree
+    globalTree_.buildGlobalTree();     // T12: Global emergency tree
+}
+
+// Compute risk score using weighted formula - O(1)
+// Decision Score = w1*(Temperature) + w2*(Smoke) + w3*(Dryness)
+// where Dryness = (100 - humidity) / 100
 float DecisionEngineModule::computeRiskScore(const SensorReading& reading) const {
     constexpr float wTemp = 0.4F;
     constexpr float wSmoke = 0.4F;
@@ -12,22 +22,23 @@ float DecisionEngineModule::computeRiskScore(const SensorReading& reading) const
     return (wTemp * normalizedTemp) + (wSmoke * normalizedSmoke) + (wHumidity * dryness);
 }
 
+// Evaluate zone-level decision through tree traversal (T10) - O(h)
 std::string DecisionEngineModule::zoneLevelDecision(float riskScore) const {
-    if (riskScore > 0.75F) return "Activate Local Emergency Response";
-    if (riskScore > 0.50F) return "Increase Local Monitoring";
-    return "Normal Monitoring";
+    return zoneTree_.evaluate(riskScore);
 }
 
+// Evaluate regional decision through tree traversal (T11) - O(h)
 std::string DecisionEngineModule::regionalDecision(float riskScore) const {
-    if (riskScore > 0.70F) return "Escalate to Nearby Zones";
-    if (riskScore > 0.45F) return "Alert Regional Coordinator";
-    return "No Regional Escalation";
+    return regionalTree_.evaluate(riskScore);
 }
 
+// Evaluate global decision through tree traversal (T12) - O(h)
 std::string DecisionEngineModule::globalDecision(float aggregatedRisk) const {
-    if (aggregatedRisk > 0.65F) return "Global Emergency Alert";
-    if (aggregatedRisk > 0.45F) return "Regional Standby Mode";
-    return "System Stable";
+    return globalTree_.evaluate(aggregatedRisk);
 }
+
+void DecisionEngineModule::printZoneTree() const { zoneTree_.printTree(); }
+void DecisionEngineModule::printRegionalTree() const { regionalTree_.printTree(); }
+void DecisionEngineModule::printGlobalTree() const { globalTree_.printTree(); }
 
 }  // namespace ifamds
