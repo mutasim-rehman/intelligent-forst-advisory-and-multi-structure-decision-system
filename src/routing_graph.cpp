@@ -5,6 +5,8 @@
 
 namespace ifamds {
 
+constexpr float RoutingGraphModule::NO_EDGE;
+
 // Add edge to adjacency list (G1) and adjacency matrix (G2) - O(1)
 // Path Cost = Distance + Danger
 void RoutingGraphModule::addEdge(int from, int to, float distance, float danger) {
