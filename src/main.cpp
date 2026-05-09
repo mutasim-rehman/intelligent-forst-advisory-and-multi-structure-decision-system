@@ -151,8 +151,8 @@ void handleGridView(const SystemState& state) {
         }
     } else if (sub == 3) {
         std::cout << "Active Zone States:\n";
-        for (const auto& pair : state.zones) {
-            const auto& z = pair.second;
+        for (int i = 0; i < state.zones.size(); i++) {
+            const auto& z = state.zones.get_data()[i].value;
             std::cout << "  Zone " << z.zoneId << " | Temp: " << z.latest.temperature
                       << " | Smoke: " << z.latest.smoke << " | Humid: " << z.latest.humidity
                       << " | Risk: " << z.riskScore
@@ -219,12 +219,12 @@ void handleFireControl(SystemState& state, DecisionEngineModule& decisionEngine,
 
     if (sub == 1 || sub == 2) {
         std::cout << "Zone ID: "; int zone = readInt();
-        if (state.zones.find(zone) == state.zones.end()) {
+        ZoneState* statePtr = state.zones.find(zone);
+        if (statePtr == nullptr) {
             std::cout << "No active state for Zone " << zone << ".\n";
             return;
         }
-        const auto& zState = state.zones.at(zone);
-        float risk = decisionEngine.computeRiskScore(zState.latest);
+        float risk = decisionEngine.computeRiskScore(statePtr->latest);
         std::cout << "Risk Score: " << risk << "\n";
         std::cout << "Decision: " << decisionEngine.zoneLevelDecision(risk) << "\n";
 
@@ -324,17 +324,18 @@ void handleDecisionSystem(const SystemState& state, DecisionEngineModule& decisi
 
     if (sub == 1 || sub == 2) {
         std::cout << "Zone ID: "; int zone = readInt();
-        if (state.zones.find(zone) == state.zones.end()) {
+        const ZoneState* statePtr = state.zones.find(zone);
+        if (statePtr == nullptr) {
             std::cout << "No data for Zone " << zone << ".\n";
             return;
         }
-        float risk = decisionEngine.computeRiskScore(state.zones.at(zone).latest);
+        float risk = decisionEngine.computeRiskScore(statePtr->latest);
         std::cout << "Risk Score: " << risk << "\n";
         if (sub == 2) std::cout << "Zone Decision: " << decisionEngine.zoneLevelDecision(risk) << "\n";
     } else if (sub == 3 || sub == 4) {
         float aggRisk = 0; int count = 0;
-        for (const auto& pair : state.zones) {
-            aggRisk += decisionEngine.computeRiskScore(pair.second.latest);
+        for (int i = 0; i < state.zones.size(); i++) {
+            aggRisk += decisionEngine.computeRiskScore(state.zones.get_data()[i].value.latest);
             count++;
         }
         float avg = count > 0 ? aggRisk / count : 0.0f;

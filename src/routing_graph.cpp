@@ -31,7 +31,7 @@ CustomVector<int> RoutingGraphModule::bfs(int start) const {
 
     CustomMap<int, bool> visited;
     CustomQueue<int> q;
-    visited[start] = true;
+    visited.insert(start, true);
     q.enqueue(start);
 
     while (!q.empty()) {
@@ -39,12 +39,15 @@ CustomVector<int> RoutingGraphModule::bfs(int start) const {
         q.dequeue(current);
         order.push_back(current);
 
-        const auto& neighbors = adjacencyList_.at(current);
-        for (std::size_t i = 0; i < neighbors.size(); ++i) {
-            const int next = neighbors[i].first;
-            if (!visited.contains(next) || !visited[next]) {
-                visited[next] = true;
-                q.enqueue(next);
+        auto listPtr = adjacencyList_.find(current);
+        if (listPtr != nullptr) {
+            for (int i = 0; i < listPtr->size(); ++i) {
+                const int next = (*listPtr)[i].first;
+                auto visitedPtr = visited.find(next);
+                if (visitedPtr == nullptr || !(*visitedPtr)) {
+                    visited.insert(next, true);
+                    q.enqueue(next);
+                }
             }
         }
     }
@@ -64,15 +67,14 @@ CustomVector<int> RoutingGraphModule::dfs(int start) const {
     return order;
 }
 
-// Compute direct path cost between two adjacent zones - O(degree)
 float RoutingGraphModule::computePathCost(int from, int to) const {
-    auto it = adjacencyList_.find(from);
-    if (it == adjacencyList_.end()) {
+    auto listPtr = adjacencyList_.find(from);
+    if (listPtr == nullptr) {
         return -1.0F;
     }
-    for (std::size_t i = 0; i < it->second.size(); ++i) {
-        const int neighbor = it->second[i].first;
-        const float cost = it->second[i].second;
+    for (int i = 0; i < listPtr->size(); ++i) {
+        const int neighbor = (*listPtr)[i].first;
+        const float cost = (*listPtr)[i].second;
         if (neighbor == to) {
             return cost;
         }
@@ -80,14 +82,12 @@ float RoutingGraphModule::computePathCost(int from, int to) const {
     return -1.0F;
 }
 
-// Fire-aware cost update: Updated Cost = Distance * (1 + FireLevel) - O(degree)
-// Increases path costs through zones affected by fire
 void RoutingGraphModule::updateFireAwareCosts(int zoneId, float fireLevel) {
-    auto it = adjacencyList_.find(zoneId);
-    if (it == adjacencyList_.end()) return;
-    for (std::size_t i = 0; i < it->second.size(); ++i) {
-        float baseCost = it->second[i].second;
-        it->second[i].second = baseCost * (1.0f + fireLevel);
+    auto listPtr = adjacencyList_.find(zoneId);
+    if (listPtr == nullptr) return;
+    for (int i = 0; i < listPtr->size(); ++i) {
+        float baseCost = (*listPtr)[i].second;
+        (*listPtr)[i].second = baseCost * (1.0f + fireLevel);
     }
     std::cout << "  [Routing] Fire-aware costs updated for Zone " << zoneId
               << " (fire level=" << fireLevel << ")\n";
@@ -111,16 +111,18 @@ void RoutingGraphModule::initMatrix(int maxNodes) {
     adjacencyMatrix_.resize(maxNodes, CustomVector<float>(maxNodes, NO_EDGE));
 }
 
-// DFS recursive helper - O(V + E)
 void RoutingGraphModule::dfsRecursive(int node, CustomMap<int, bool>& visited, CustomVector<int>& order) const {
-    visited[node] = true;
+    visited.insert(node, true);
     order.push_back(node);
 
-    const auto& neighbors = adjacencyList_.at(node);
-    for (std::size_t i = 0; i < neighbors.size(); ++i) {
-        const int next = neighbors[i].first;
-        if (!visited.contains(next) || !visited[next]) {
-            dfsRecursive(next, visited, order);
+    auto listPtr = adjacencyList_.find(node);
+    if (listPtr != nullptr) {
+        for (int i = 0; i < listPtr->size(); ++i) {
+            const int next = (*listPtr)[i].first;
+            auto visitedPtr = visited.find(next);
+            if (visitedPtr == nullptr || !(*visitedPtr)) {
+                dfsRecursive(next, visited, order);
+            }
         }
     }
 }

@@ -32,14 +32,17 @@ void EventMemoryModule::addCorrectionEvent(const EventRecord& event) {
 void EventMemoryModule::traverseCorrectionForward() const {
     std::cout << "--- Forward Correction Chain Traversal ---\n";
     int index = 0;
-    correctionChain_.traverseForward([&index](const EventRecord& e) {
+    auto current = correctionChain_.getHead();
+    while (current != nullptr) {
+        const EventRecord& e = current->data;
         std::cout << "  [" << index++ << "] Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | Smoke: " << e.reading.smoke
                   << " | Status: " << (e.status == EventStatus::Verified ? "Verified" :
                                         e.status == EventStatus::Anomaly ? "Anomaly" : "Raw")
                   << "\n";
-    });
+        current = current->next;
+    }
     if (correctionChain_.size() == 0)
         std::cout << "  (empty)\n";
 }
@@ -48,14 +51,17 @@ void EventMemoryModule::traverseCorrectionForward() const {
 void EventMemoryModule::traverseCorrectionBackward() const {
     std::cout << "--- Backward Correction Chain Traversal ---\n";
     int index = 0;
-    correctionChain_.traverseBackward([&index](const EventRecord& e) {
+    auto current = correctionChain_.getTail();
+    while (current != nullptr) {
+        const EventRecord& e = current->data;
         std::cout << "  [" << index++ << "] Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | Smoke: " << e.reading.smoke
                   << " | Status: " << (e.status == EventStatus::Verified ? "Verified" :
                                         e.status == EventStatus::Anomaly ? "Anomaly" : "Raw")
                   << "\n";
-    });
+        current = current->prev;
+    }
     if (correctionChain_.size() == 0)
         std::cout << "  (empty)\n";
 }
@@ -72,43 +78,57 @@ void EventMemoryModule::runMonitoringLoop(int cycles) const {
         std::cout << "  No events in monitoring loop.\n";
         return;
     }
-    monitoringLoop_.traverse(cycles, [](const EventRecord& e, int i) {
+    auto current = monitoringLoop_.getHead();
+    int totalVisits = monitoringLoop_.size() * cycles;
+    for (int i = 0; i < totalVisits; ++i) {
+        if (current == nullptr) break;
+        const EventRecord& e = current->data;
         std::cout << "  Cycle step " << i << ": Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | Smoke: " << e.reading.smoke << "\n";
-    });
+        current = current->next;
+    }
 }
 
 // Print raw events (L1 forward traversal) - O(n)
 void EventMemoryModule::printRawEvents() const {
     std::cout << "--- Raw Event Stream (L1) ---\n";
-    rawEvents_.traverseForward([](const EventRecord& e) {
+    auto current = rawEvents_.getHead();
+    while (current != nullptr) {
+        const EventRecord& e = current->data;
         std::cout << "  Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | TS: " << e.reading.timestamp << "\n";
-    });
+        current = current->next;
+    }
     if (rawEvents_.empty()) std::cout << "  (empty)\n";
 }
 
 // Print verified events (L2 forward traversal) - O(n)
 void EventMemoryModule::printVerifiedEvents() const {
     std::cout << "--- Verified Event Stream (L2) ---\n";
-    verifiedEvents_.traverseForward([](const EventRecord& e) {
+    auto current = verifiedEvents_.getHead();
+    while (current != nullptr) {
+        const EventRecord& e = current->data;
         std::cout << "  Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | TS: " << e.reading.timestamp << "\n";
-    });
+        current = current->next;
+    }
     if (verifiedEvents_.empty()) std::cout << "  (empty)\n";
 }
 
 // Print anomaly events (L3 forward traversal) - O(n)
 void EventMemoryModule::printAnomalyEvents() const {
     std::cout << "--- Anomaly Event Stream (L3) ---\n";
-    anomalyEvents_.traverseForward([](const EventRecord& e) {
+    auto current = anomalyEvents_.getHead();
+    while (current != nullptr) {
+        const EventRecord& e = current->data;
         std::cout << "  [!] Zone " << e.reading.zoneId
                   << " | Temp: " << e.reading.temperature
                   << " | Smoke: " << e.reading.smoke << "\n";
-    });
+        current = current->next;
+    }
     if (anomalyEvents_.empty()) std::cout << "  (empty)\n";
 }
 

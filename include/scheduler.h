@@ -10,12 +10,7 @@ namespace ifamds {
 // Comparator for the emergency priority queue
 // Higher priority value = higher urgency
 // ============================================================
-struct TaskPriorityCompare {
-    bool operator()(const Task& a, const Task& b) const {
-        return a.priority < b.priority;
-    }
-};
-
+// Comparator removed since Task implements operator>
 // ============================================================
 // Scheduler Module
 // Uses custom data structures instead of STL:
@@ -39,7 +34,7 @@ public:
 private:
     CustomQueue<Task> routineQueue_;                                       // Q1
     CustomQueue<Task> surveillanceQueue_;                                  // Q2
-    CustomPriorityQueue<Task, TaskPriorityCompare> emergencyQueue_;       // Q3
+    CustomPriorityQueue<Task> emergencyQueue_;                             // Q3
     CustomQueue<Task> multiFactorQueue_;                                   // Q4
 };
 

@@ -19,14 +19,23 @@ void HashIndexModule::updateCache(int zoneId, const SensorReading& reading) {
     hashTable_.updateCache(zoneId, reading);
 }
 
-// Display entire hash table showing bucket chains (collision visualization)
 void HashIndexModule::displayTable() const {
     std::cout << "--- Hash Index Table (Size: " << hashTable_.getTableSize()
               << ", Entries: " << hashTable_.getCount() << ") ---\n";
-    hashTable_.displayTable([](const int& key, const SensorReading& val) {
-        std::cout << "[Zone " << key << ": T=" << val.temperature
-                  << " S=" << val.smoke << " H=" << val.humidity << "]";
-    });
+    auto buckets = hashTable_.getBuckets();
+    for (int i = 0; i < hashTable_.getTableSize(); i++) {
+        if (buckets[i] != nullptr) {
+            std::cout << "Bucket[" << i << "]: ";
+            auto current = buckets[i];
+            while (current != nullptr) {
+                std::cout << "[Zone " << current->key << ": T=" << current->value.temperature
+                          << " S=" << current->value.smoke << " H=" << current->value.humidity << "]";
+                if (current->next != nullptr) std::cout << " -> ";
+                current = current->next;
+            }
+            std::cout << "\n";
+        }
+    }
 }
 
 std::size_t HashIndexModule::entryCount() const {

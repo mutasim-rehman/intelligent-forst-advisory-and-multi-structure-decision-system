@@ -2,86 +2,101 @@
 #define IFAMDS_CUSTOM_MAP_H
 
 #include "custom_vector.h"
-#include "custom_pair.h"
 
 namespace ifamds {
 
 template<typename K, typename V>
+struct MapNode {
+    K key;
+    V value;
+};
+
+template<typename K, typename V>
 class CustomMap {
+private:
+    CustomVector<MapNode<K, V>> data;
+
 public:
-    using value_type = CustomPair<K, V>;
-    using iterator = typename CustomVector<value_type>::iterator;
-    using const_iterator = typename CustomVector<value_type>::const_iterator;
+    CustomMap() {}
 
-    CustomMap() = default;
-
-    void insert(const K& key, const V& value) {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
-                data_[i].second = value;
+    void insert(K key, V value) {
+        for (int i = 0; i < data.size(); i++) {
+            if (data[i].key == key) {
+                data[i].value = value;
                 return;
             }
         }
-        data_.push_back(CustomPair<K, V>(key, value));
+        MapNode<K, V> newNode;
+        newNode.key = key;
+        newNode.value = value;
+        data.push_back(newNode);
     }
 
-    V& operator[](const K& key) {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
-                return data_[i].second;
+    V& operator[](K key) {
+        for (int i = 0; i < data.size(); i++) {
+            if (data[i].key == key) {
+                return data[i].value;
             }
         }
-        data_.push_back(CustomPair<K, V>(key, V()));
-        return data_.back().second;
+        MapNode<K, V> newNode;
+        newNode.key = key;
+        // Default constructor for V
+        data.push_back(newNode);
+        return data[data.size() - 1].value;
     }
 
-    const V& at(const K& key) const {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
-                return data_[i].second;
-            }
-        }
-        throw std::out_of_range("Key not found in CustomMap");
-    }
-
-    iterator find(const K& key) {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
-                return data_.begin() + i;
-            }
-        }
-        return end();
-    }
-
-    const_iterator find(const K& key) const {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
-                return data_.begin() + i;
-            }
-        }
-        return end();
-    }
-
-    bool contains(const K& key) const {
-        for (std::size_t i = 0; i < data_.size(); ++i) {
-            if (data_[i].first == key) {
+    bool contains(K key) const {
+        for (int i = 0; i < data.size(); i++) {
+            if (data[i].key == key) {
                 return true;
             }
         }
         return false;
     }
+    
+    V* find(K key) {
+        for (int i = 0; i < data.size(); i++) {
+            if (data[i].key == key) {
+                return &data[i].value;
+            }
+        }
+        return nullptr;
+    }
 
-    iterator begin() { return data_.begin(); }
-    const_iterator begin() const { return data_.begin(); }
-    iterator end() { return data_.end(); }
-    const_iterator end() const { return data_.end(); }
+    const V* find(K key) const {
+        for (int i = 0; i < data.size(); i++) {
+            if (data[i].key == key) {
+                return &data[i].value;
+            }
+        }
+        return nullptr;
+    }
 
-    std::size_t size() const { return data_.size(); }
-    bool empty() const { return data_.empty(); }
-    void clear() { data_.clear(); }
-
-private:
-    CustomVector<value_type> data_;
+    int size() const {
+        return data.size();
+    }
+    
+    bool empty() const {
+        return data.empty();
+    }
+    
+    void clear() {
+        data.clear();
+    }
+    
+    MapNode<K, V>* begin() { return data.begin(); }
+    const MapNode<K, V>* begin() const { return data.begin(); }
+    MapNode<K, V>* end() { return data.end(); }
+    const MapNode<K, V>* end() const { return data.end(); }
+    
+    // For iterating through the map manually
+    CustomVector<MapNode<K, V>>& get_data() {
+        return data;
+    }
+    
+    const CustomVector<MapNode<K, V>>& get_data() const {
+        return data;
+    }
 };
 
 } // namespace ifamds

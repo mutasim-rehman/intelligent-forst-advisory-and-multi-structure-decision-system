@@ -1,60 +1,60 @@
 #ifndef IFAMDS_CUSTOM_HASH_H
 #define IFAMDS_CUSTOM_HASH_H
 
-#include <cstddef>
 #include <iostream>
-#include <functional>
 
 namespace ifamds {
 
-// ============================================================
-// Custom Hash Table with separate chaining (H1 + H2)
-// H1: Primary index table
-// H2: Collision handling via chaining (linked list per bucket)
-// H3: Simple cache array for frequently accessed keys
-//
-// Insert: O(1) average, O(n) worst-case with collisions
-// Lookup: O(1) average, O(n) worst-case
-// Hash function: Index = Key % TableSize
-// ============================================================
 template<typename K, typename V>
 class CustomHashTable {
+private:
+    struct Entry {
+        K key;
+        V value;
+        Entry* next;
+        Entry(K k, V v) : key(k), value(v), next(nullptr) {}
+    };
+
+    Entry** buckets;
+    int table_size;
+    int current_count;
+
+    // Simple cache array
+    static const int CACHE_SIZE = 8;
+    K cacheKeys[8];
+    V cacheValues[8];
+    bool cacheValid[8];
+    int cacheInsertPos;
+
 public:
-    CustomHashTable(std::size_t tableSize = 31)
-        : tableSize_(tableSize), count_(0) {
-        // Allocate bucket array (H1), each bucket is a linked list head pointer (H2)
-        buckets_ = new Entry*[tableSize_];
-        for (std::size_t i = 0; i < tableSize_; ++i) {
-            buckets_[i] = nullptr;
+    CustomHashTable(int size = 31) {
+        table_size = size;
+        current_count = 0;
+        buckets = new Entry*[table_size];
+        for (int i = 0; i < table_size; ++i) {
+            buckets[i] = nullptr;
         }
-        // Allocate cache (H3) - small fixed-size cache
-        cacheKeys_ = new K[CACHE_SIZE]();
-        cacheValues_ = new V[CACHE_SIZE]();
-        cacheValid_ = new bool[CACHE_SIZE]();
+
         for (int i = 0; i < CACHE_SIZE; ++i) {
-            cacheValid_[i] = false;
+            cacheValid[i] = false;
         }
+        cacheInsertPos = 0;
     }
 
     ~CustomHashTable() {
         clear();
-        delete[] buckets_;
-        delete[] cacheKeys_;
-        delete[] cacheValues_;
-        delete[] cacheValid_;
+        delete[] buckets;
     }
 
-    // Hash function: Index = Key % TableSize - O(1)
-    std::size_t hashFunction(const K& key) const {
-        return static_cast<std::size_t>(key) % tableSize_;
+    int hashFunction(K key) const {
+        return (int)key % table_size;
     }
 
-    // Insert a key-value pair. Chaining handles collisions (H2) - O(1) average
-    void insert(const K& key, const V& value) {
-        std::size_t index = hashFunction(key);
-        // Check if key already exists in chain, update if so
-        Entry* current = buckets_[index];
-        while (current) {
+    void insert(K key, V value) {
+        int index = hashFunction(key);
+        
+        Entry* current = buckets[index];
+        while (current != nullptr) {
             if (current->key == key) {
                 current->value = value;
                 updateCache(key, value);
@@ -62,27 +62,27 @@ public:
             }
             current = current->next;
         }
-        // New entry at head of chain (collision handled by chaining)
+        
         Entry* newEntry = new Entry(key, value);
-        newEntry->next = buckets_[index];
-        buckets_[index] = newEntry;
-        count_++;
+        newEntry->next = buckets[index];
+        buckets[index] = newEntry;
+        current_count++;
         updateCache(key, value);
     }
 
-    // Retrieve a value by key. Checks cache first (H3), then primary table (H1) - O(1) average
-    bool get(const K& key, V& outValue) const {
-        // Check cache first (H3) - O(1)
+    bool get(K key, V& outValue) const {
+        // Check cache first
         for (int i = 0; i < CACHE_SIZE; ++i) {
-            if (cacheValid_[i] && cacheKeys_[i] == key) {
-                outValue = cacheValues_[i];
+            if (cacheValid[i] && cacheKeys[i] == key) {
+                outValue = cacheValues[i];
                 return true;
             }
         }
-        // Search in primary hash table (H1) with chaining (H2)
-        std::size_t index = hashFunction(key);
-        Entry* current = buckets_[index];
-        while (current) {
+        
+        // Search in primary table
+        int index = hashFunction(key);
+        Entry* current = buckets[index];
+        while (current != nullptr) {
             if (current->key == key) {
                 outValue = current->value;
                 return true;
@@ -92,78 +92,45 @@ public:
         return false;
     }
 
-    // Update cache entry (H3) - simple circular replacement
-    void updateCache(const K& key, const V& value) {
-        // Check if already in cache
+    void updateCache(K key, V value) {
         for (int i = 0; i < CACHE_SIZE; ++i) {
-            if (cacheValid_[i] && cacheKeys_[i] == key) {
-                cacheValues_[i] = value;
+            if (cacheValid[i] && cacheKeys[i] == key) {
+                cacheValues[i] = value;
                 return;
             }
         }
-        // Find empty slot or replace oldest (circular)
-        cacheKeys_[cacheInsertPos_] = key;
-        cacheValues_[cacheInsertPos_] = value;
-        cacheValid_[cacheInsertPos_] = true;
-        cacheInsertPos_ = (cacheInsertPos_ + 1) % CACHE_SIZE;
+        cacheKeys[cacheInsertPos] = key;
+        cacheValues[cacheInsertPos] = value;
+        cacheValid[cacheInsertPos] = true;
+        cacheInsertPos = (cacheInsertPos + 1) % CACHE_SIZE;
+    }
+    
+    // For manual iteration outside the class
+    Entry** getBuckets() const {
+        return buckets;
     }
 
-    // Display the hash table contents - for debugging / menu display
-    void displayTable(std::function<void(const K&, const V&)> printFn) const {
-        for (std::size_t i = 0; i < tableSize_; ++i) {
-            if (buckets_[i]) {
-                std::cout << "Bucket[" << i << "]: ";
-                Entry* current = buckets_[i];
-                while (current) {
-                    printFn(current->key, current->value);
-                    if (current->next) std::cout << " -> ";
-                    current = current->next;
-                }
-                std::cout << "\n";
-            }
-        }
-    }
-
-    std::size_t getCount() const { return count_; }
-    std::size_t getTableSize() const { return tableSize_; }
+    int getCount() const { return current_count; }
+    int getTableSize() const { return table_size; }
 
     void clear() {
-        for (std::size_t i = 0; i < tableSize_; ++i) {
-            Entry* current = buckets_[i];
-            while (current) {
+        for (int i = 0; i < table_size; ++i) {
+            Entry* current = buckets[i];
+            while (current != nullptr) {
                 Entry* temp = current;
                 current = current->next;
                 delete temp;
             }
-            buckets_[i] = nullptr;
+            buckets[i] = nullptr;
         }
-        count_ = 0;
+        current_count = 0;
         for (int i = 0; i < CACHE_SIZE; ++i) {
-            cacheValid_[i] = false;
+            cacheValid[i] = false;
         }
-        cacheInsertPos_ = 0;
+        cacheInsertPos = 0;
     }
-
-private:
-    struct Entry {
-        K key;
-        V value;
-        Entry* next;
-        Entry(const K& k, const V& v) : key(k), value(v), next(nullptr) {}
-    };
-
-    Entry** buckets_;
-    std::size_t tableSize_;
-    std::size_t count_;
-
-    // H3: Simple cache
-    static const int CACHE_SIZE = 8;
-    K* cacheKeys_;
-    V* cacheValues_;
-    bool* cacheValid_;
-    int cacheInsertPos_ = 0;
 };
 
 }  // namespace ifamds
 
-#endif
+#endif // IFAMDS_CUSTOM_HASH_H

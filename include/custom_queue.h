@@ -1,143 +1,94 @@
 #ifndef IFAMDS_CUSTOM_QUEUE_H
 #define IFAMDS_CUSTOM_QUEUE_H
 
-#include <cstddef>
-#include <functional>
-
 namespace ifamds {
 
-// ============================================================
-// Custom FIFO Queue (linked-list-based)
-// Used for Q1: Routine, Q2: Surveillance, Q4: Multi-factor
-// Enqueue: O(1), Dequeue: O(1)
-// ============================================================
+// Basic FIFO Queue using linked list
 template<typename T>
 class CustomQueue {
-public:
-    CustomQueue() : front_(nullptr), rear_(nullptr), size_(0) {}
-
-    ~CustomQueue() { clear(); }
-
-    // Enqueue at the rear - O(1)
-    void enqueue(const T& value) {
-        Node* newNode = new Node(value);
-        if (!rear_) {
-            front_ = rear_ = newNode;
-        } else {
-            rear_->next = newNode;
-            rear_ = newNode;
-        }
-        size_++;
-    }
-
-    // Dequeue from the front - O(1)
-    bool dequeue(T& outValue) {
-        if (!front_) return false;
-        Node* temp = front_;
-        outValue = temp->data;
-        front_ = front_->next;
-        if (!front_) rear_ = nullptr;
-        delete temp;
-        size_--;
-        return true;
-    }
-
-    // Peek at the front - O(1)
-    bool peek(T& outValue) const {
-        if (!front_) return false;
-        outValue = front_->data;
-        return true;
-    }
-
-    bool empty() const { return size_ == 0; }
-    std::size_t size() const { return size_; }
-
-    void clear() {
-        while (front_) {
-            Node* temp = front_;
-            front_ = front_->next;
-            delete temp;
-        }
-        rear_ = nullptr;
-        size_ = 0;
-    }
-
 private:
     struct Node {
         T data;
         Node* next;
-        Node(const T& d) : data(d), next(nullptr) {}
+        Node(T d) : data(d), next(nullptr) {}
     };
-    Node* front_;
-    Node* rear_;
-    std::size_t size_;
+    Node* front_node;
+    Node* rear_node;
+    int current_size;
+
+public:
+    CustomQueue() {
+        front_node = nullptr;
+        rear_node = nullptr;
+        current_size = 0;
+    }
+
+    ~CustomQueue() { clear(); }
+
+    void enqueue(T value) {
+        Node* newNode = new Node(value);
+        if (rear_node == nullptr) {
+            front_node = rear_node = newNode;
+        } else {
+            rear_node->next = newNode;
+            rear_node = newNode;
+        }
+        current_size++;
+    }
+
+    bool dequeue(T& outValue) {
+        if (front_node == nullptr) return false;
+        Node* temp = front_node;
+        outValue = temp->data;
+        front_node = front_node->next;
+        if (front_node == nullptr) {
+            rear_node = nullptr;
+        }
+        delete temp;
+        current_size--;
+        return true;
+    }
+
+    bool empty() const { return current_size == 0; }
+    int size() const { return current_size; }
+
+    void clear() {
+        while (front_node != nullptr) {
+            Node* temp = front_node;
+            front_node = front_node->next;
+            delete temp;
+        }
+        rear_node = nullptr;
+        current_size = 0;
+    }
 };
 
-// ============================================================
-// Custom Priority Queue (array-based max-heap)
-// Used for Q3: Emergency response queue
-// Push: O(log n), Pop: O(log n), Top: O(1)
-// ============================================================
-template<typename T, typename Compare = std::less<T>>
+// Basic Priority Queue using array-based max-heap
+template<typename T>
 class CustomPriorityQueue {
-public:
-    CustomPriorityQueue() : data_(nullptr), size_(0), capacity_(0) {}
-
-    ~CustomPriorityQueue() { delete[] data_; }
-
-    // Push a value and heapify up - O(log n)
-    void push(const T& value) {
-        if (size_ >= capacity_) {
-            grow();
-        }
-        data_[size_] = value;
-        heapifyUp(size_);
-        size_++;
-    }
-
-    // Pop the highest-priority element and heapify down - O(log n)
-    bool pop(T& outValue) {
-        if (size_ == 0) return false;
-        outValue = data_[0];
-        size_--;
-        if (size_ > 0) {
-            data_[0] = data_[size_];
-            heapifyDown(0);
-        }
-        return true;
-    }
-
-    // Peek at the highest-priority element - O(1)
-    bool top(T& outValue) const {
-        if (size_ == 0) return false;
-        outValue = data_[0];
-        return true;
-    }
-
-    bool empty() const { return size_ == 0; }
-    std::size_t size() const { return size_; }
-
 private:
-    // Grow array capacity when full - amortized O(1)
+    T* data;
+    int current_size;
+    int capacity;
+
     void grow() {
-        std::size_t newCap = (capacity_ == 0) ? 8 : capacity_ * 2;
+        int newCap = (capacity == 0) ? 10 : capacity * 2;
         T* newData = new T[newCap];
-        for (std::size_t i = 0; i < size_; ++i) {
-            newData[i] = data_[i];
+        for (int i = 0; i < current_size; i++) {
+            newData[i] = data[i];
         }
-        delete[] data_;
-        data_ = newData;
-        capacity_ = newCap;
+        delete[] data;
+        data = newData;
+        capacity = newCap;
     }
 
-    // Restore heap property upward - O(log n)
-    void heapifyUp(std::size_t index) {
+    void heapifyUp(int index) {
         while (index > 0) {
-            std::size_t parent = (index - 1) / 2;
-            if (comp_(data_[parent], data_[index])) {
-                T temp = data_[parent];
-                data_[parent] = data_[index];
-                data_[index] = temp;
+            int parent = (index - 1) / 2;
+            if (data[index] > data[parent]) { // Using simple '>'
+                T temp = data[parent];
+                data[parent] = data[index];
+                data[index] = temp;
                 index = parent;
             } else {
                 break;
@@ -145,22 +96,23 @@ private:
         }
     }
 
-    // Restore heap property downward - O(log n)
-    void heapifyDown(std::size_t index) {
+    void heapifyDown(int index) {
         while (true) {
-            std::size_t largest = index;
-            std::size_t left = 2 * index + 1;
-            std::size_t right = 2 * index + 2;
-            if (left < size_ && comp_(data_[largest], data_[left])) {
+            int largest = index;
+            int left = 2 * index + 1;
+            int right = 2 * index + 2;
+            
+            if (left < current_size && data[left] > data[largest]) {
                 largest = left;
             }
-            if (right < size_ && comp_(data_[largest], data_[right])) {
+            if (right < current_size && data[right] > data[largest]) {
                 largest = right;
             }
+            
             if (largest != index) {
-                T temp = data_[index];
-                data_[index] = data_[largest];
-                data_[largest] = temp;
+                T temp = data[index];
+                data[index] = data[largest];
+                data[largest] = temp;
                 index = largest;
             } else {
                 break;
@@ -168,12 +120,39 @@ private:
         }
     }
 
-    T* data_;
-    std::size_t size_;
-    std::size_t capacity_;
-    Compare comp_;
+public:
+    CustomPriorityQueue() {
+        data = nullptr;
+        current_size = 0;
+        capacity = 0;
+    }
+
+    ~CustomPriorityQueue() { delete[] data; }
+
+    void push(T value) {
+        if (current_size >= capacity) {
+            grow();
+        }
+        data[current_size] = value;
+        heapifyUp(current_size);
+        current_size++;
+    }
+
+    bool pop(T& outValue) {
+        if (current_size == 0) return false;
+        outValue = data[0];
+        current_size--;
+        if (current_size > 0) {
+            data[0] = data[current_size];
+            heapifyDown(0);
+        }
+        return true;
+    }
+
+    bool empty() const { return current_size == 0; }
+    int size() const { return current_size; }
 };
 
-}  // namespace ifamds
+} // namespace ifamds
 
-#endif
+#endif // IFAMDS_CUSTOM_QUEUE_H

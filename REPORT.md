@@ -5,8 +5,8 @@ This report details the implementation of the Intelligent Forest Advisory and Mu
 ---
 
 ## 1. Input Environmental Data
-### **Data Structures Used: Vectors (Dynamic Arrays) and Hash Maps**
-- **Explanation**: This module captures real-time data such as temperature, smoke, and humidity levels for specific forest zones. **Dynamic arrays (`std::vector`)** are used to store continuous streams of raw data without a fixed size limit. Additionally, a **Hash Table** stores these readings mapped by the Zone ID, allowing O(1) instantaneous access when validating and updating live data streams.
+### **Data Structures Used: Custom Dynamic Arrays and Hash Maps**
+- **Explanation**: This module captures real-time data such as temperature, smoke, and humidity levels for specific forest zones. **Custom Dynamic Arrays (using raw pointers and dynamic memory allocation)** are used to store continuous streams of raw data without a fixed size limit. Additionally, a **Custom Hash Table** stores these readings mapped by the Zone ID, allowing O(1) instantaneous access when validating and updating live data streams.
 
 ### **Menu Output / Handling**:
 ```text
@@ -29,8 +29,8 @@ Data inserted for Zone 3.
 ---
 
 ## 2. View Forest Grid Status
-### **Data Structures Used: 2D Matrices and Hash Maps**
-- **Explanation**: The forest grid is visually and logically represented using a **2D Matrix (`std::vector<std::vector<float>>`)**. This naturally maps to the physical grid layout of a forest, allowing spatial referencing. Furthermore, active conditions for specific zones are managed through a **Hash Map / Dictionary (`std::map` or `std::unordered_map`)**, utilizing the `zoneId` as the key to quickly look up active risk scores.
+### **Data Structures Used: 2D Matrices and Custom Hash Maps**
+- **Explanation**: The forest grid is visually and logically represented using a **2D Matrix (built via nested Custom Dynamic Arrays)**. This naturally maps to the physical grid layout of a forest, allowing spatial referencing. Furthermore, active conditions for specific zones are managed through a **Custom Hash Map**, utilizing the `zoneId` as the key to quickly look up active risk scores.
 
 ### **Menu Output / Handling**:
 ```text

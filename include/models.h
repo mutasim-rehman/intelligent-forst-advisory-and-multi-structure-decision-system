@@ -1,9 +1,7 @@
 #ifndef IFAMDS_MODELS_H
 #define IFAMDS_MODELS_H
 
-#include <cstdint>
 #include <string>
-#include "custom_vector.h"
 
 namespace ifamds {
 
@@ -21,40 +19,80 @@ enum class TaskType {
 };
 
 struct SensorReading {
-    int zoneId{};
-    float temperature{};
-    float smoke{};
-    float humidity{};
-    std::int64_t timestamp{};
+    int zoneId;
+    float temperature;
+    float smoke;
+    float humidity;
+    long long timestamp;
+
+    SensorReading() {
+        zoneId = 0;
+        temperature = 0.0f;
+        smoke = 0.0f;
+        humidity = 0.0f;
+        timestamp = 0;
+    }
 };
 
 struct EventRecord {
-    SensorReading reading{};
-    EventStatus status{EventStatus::Raw};
-    std::string note{};
+    SensorReading reading;
+    EventStatus status;
+    std::string note;
+
+    EventRecord() {
+        status = EventStatus::Raw;
+        note = "";
+    }
 };
 
 struct Task {
-    int id{};
-    TaskType type{TaskType::Routine};
-    int priority{};
-    std::string payload{};
-    std::int64_t createdAt{};
+    int id;
+    TaskType type;
+    int priority;
+    std::string payload;
+    long long createdAt;
+
+    Task() {
+        id = 0;
+        type = TaskType::Routine;
+        priority = 0;
+        payload = "";
+        createdAt = 0;
+    }
+    
+    // Priority queue comparison
+    bool operator>(const Task& other) const {
+        return priority > other.priority;
+    }
 };
 
 struct ZoneState {
-    int zoneId{};
-    SensorReading latest{};
-    float riskScore{};
-    bool fireAlert{};
+    int zoneId;
+    SensorReading latest;
+    float riskScore;
+    bool fireAlert;
+
+    ZoneState() {
+        zoneId = 0;
+        riskScore = 0.0f;
+        fireAlert = false;
+    }
 };
 
 struct SystemMetrics {
-    double lastLatencyMs{};
-    std::size_t routineQueueSize{};
-    std::size_t emergencyQueueSize{};
-    bool bottleneckDetected{};
-    std::string bottleneckModule{};
+    double lastLatencyMs;
+    int routineQueueSize;
+    int emergencyQueueSize;
+    bool bottleneckDetected;
+    std::string bottleneckModule;
+
+    SystemMetrics() {
+        lastLatencyMs = 0.0;
+        routineQueueSize = 0;
+        emergencyQueueSize = 0;
+        bottleneckDetected = false;
+        bottleneckModule = "";
+    }
 };
 
 }  // namespace ifamds
